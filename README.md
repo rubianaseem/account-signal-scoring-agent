@@ -72,3 +72,30 @@ Built against these tools — swap in whatever you actually run:
 - A write-back step: create a Salesforce Task or update an "Account Score" field via API for HOT_AE_ALERT accounts
 - A Slack alert to the AE's channel/DM for HOT_AE_ALERT accounts specifically
 - Logging which accounts were flagged and what happened to them, to eventually validate/retune the signal weights
+
+## Adaptive scoring (feedback loop, not "self-learning AI")
+
+To be precise about what this is: not a machine learning model that trains itself — a lightweight feedback loop. `adaptive_scoring.py` lets you log the real outcome of accounts you scored (won/lost), then compares average signal values between the two groups to suggest which entries in `SIGNAL_WEIGHTS` actually predict conversion.
+
+```bash
+python adaptive_scoring.py --record-outcome --company "Nimbus Manufacturing" \
+  --g2_comparison_visits 2 --pricing_page_views 4 \
+  --distinct_stakeholders_engaged 3 --product_trial_active_days 0 \
+  --content_downloads 1 --outcome won
+
+python adaptive_scoring.py --analyze
+```
+
+```
+ADAPTIVE SCORING ANALYSIS — 6 outcomes logged (3 won, 3 lost)
+
+Signal                          Avg (Won)     Avg (Lost)    Lift
+pricing_page_views              4.00          0.33          +1100%
+distinct_stakeholders_engaged   3.00          0.67          +350%
+
+SUGGESTED WEIGHT ADJUSTMENTS (current -> suggested):
+  pricing_page_views: 6 -> 8 (increase — strong predictor)
+  distinct_stakeholders_engaged: 10 -> 13 (increase — strong predictor)
+```
+
+Suggestions are printed for review — nothing is applied to `account_signal_scoring_agent.py` automatically. This is a periodic health-check on whether the signal weights still match reality, not an autonomous system.
