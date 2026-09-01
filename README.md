@@ -56,3 +56,19 @@ Built against these tools — swap in whatever you actually run:
 - `SIGNAL_WEIGHTS` at the top of the script controls how much each signal type counts — tune to match what actually predicts pipeline in your funnel
 - `DECAY_HALF_LIFE_DAYS` controls how fast old signals stop mattering
 - Swap `sample_accounts.csv` for a live feed from your CDP, warehouse (Snowflake/Hightouch), or a webhook from G2/6sense/HockeyStack
+
+## How this runs today (and what production would add)
+
+**Trigger:** none built in — run manually (`python account_signal_scoring_agent.py --input ...`) or schedule it (cron/n8n) to re-score accounts on a timer. It doesn't fire automatically when a new signal comes in.
+
+**Action taken:** prints fit/intent scores, routing tier, and the account brief to your terminal only. It does **not** create a Salesforce Task, alert an AE, or update any CRM field — that's a step you'd add on top.
+
+**Self-learning:** no. `SIGNAL_WEIGHTS` and `DECAY_HALF_LIFE_DAYS` are hand-set — there's no model learning from which accounts actually converted. You'd revisit these manually as you see what predicts pipeline.
+
+**Loop:** no persistent process — one pass over the input file per run, then it exits.
+
+**What a production version would add:**
+- A scheduled run (hourly/daily) or a webhook triggered by a real-time signal feed (G2/6sense webhook, warehouse change)
+- A write-back step: create a Salesforce Task or update an "Account Score" field via API for HOT_AE_ALERT accounts
+- A Slack alert to the AE's channel/DM for HOT_AE_ALERT accounts specifically
+- Logging which accounts were flagged and what happened to them, to eventually validate/retune the signal weights
