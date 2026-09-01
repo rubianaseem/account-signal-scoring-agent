@@ -99,3 +99,18 @@ SUGGESTED WEIGHT ADJUSTMENTS (current -> suggested):
 ```
 
 Suggestions are printed for review — nothing is applied to `account_signal_scoring_agent.py` automatically. This is a periodic health-check on whether the signal weights still match reality, not an autonomous system.
+
+## v2: persistent evidence brain + weekly report
+
+The agent now keeps a `brain/<account>.json` (+ human-readable `.md`) file per account that accumulates signal evidence across runs, with recency decay applied to intent so stale signals fade rather than staying maxed out forever. A new `--report` mode ranks every tracked account by fit + intent and calls out anything hitting HOT_AE_ALERT — this is the literal "tells reps where to spend Tuesday" view.
+
+```
+python account_signal_scoring_agent.py --input sample_accounts.csv        # first pass
+python account_signal_scoring_agent.py --input sample_accounts_day2.csv   # new evidence lands on top
+python account_signal_scoring_agent.py --report                           # ranked "where to spend your time" view
+python account_signal_scoring_agent.py --show "Coastal Health Group"      # full accumulated brain file
+```
+
+`sample_accounts_day2.csv` shows Coastal Health Group picking up new G2/pricing-page activity on a second run — its brain file accumulates that on top of what was already logged, and `--report` re-ranks it accordingly.
+
+The `brain/` directory is where this state lives; it's gitignored so your own runs start clean.
